@@ -45,7 +45,7 @@ npm run contracts:test
 KTRACE_CHAIN_PROFILE=botchain_testnet npm run aa:estimate:probe
 ```
 
-The contract command deploys Factory/Account only inside Hardhat's ephemeral local EVM. The estimate probe calls only `eth_estimateUserOperationGas` through the read-only RPC allowlist. Until an approved Botchain deployment exists, `bundler_rejected` / `AA20 account not deployed` is expected and must not be relabeled as Account readiness.
+The contract command deploys Factory/Account only inside Hardhat's ephemeral local EVM and executes a signed Session UserOperation through the exact-pinned `@account-abstraction/contracts@0.7.0` reference EntryPoint `handleOps`. The estimate probe calls only `eth_estimateUserOperationGas` through the read-only RPC allowlist. Until an approved Botchain deployment exists, only RPC `-32521` with `AA20 account not deployed` is the expected green rejection; authentication, method, transport, and other validation failures exit nonzero and must not be relabeled as Account readiness.
 
 ## G3 local workflow evidence
 
@@ -66,6 +66,8 @@ If execution stops before the terminal state, inspect the nonterminal workflow/j
 | `chain_profile_locked_override` | endpoint/address/decimals differ | stop and review; do not bypass the lock |
 | `chain_preflight_chain_id_mismatch` | RPC or bundler is on another chain | stop; verify endpoint ownership and DNS |
 | `chain_preflight_code_hash_mismatch` | deployed code differs from the profile | stop; treat as a chain/deployment incident |
+| `aa_factory_not_configured` / `aa_factory_mismatch` | undeployed or mixed Factory initCode | stop; lock the reviewed deployed Factory in the profile only after approval |
+| `aa_operation_invalid` | SessionOperation metadata and calldata differ | discard the operation; rebuild through the dedicated constructor |
 | `chain_write_not_authorized` | a write reached the gate | expected until exact Owner approval and a reviewed capability exist |
 
 ## Rollback

@@ -14,6 +14,8 @@ Report vulnerabilities privately to the repository owner rather than opening an 
 - Normal operations must be signed by a session key inside ERC-4337 v0.7. Backend signing, owner normal-operation signing and EOA relay fallback are forbidden.
 - Owner authority is limited to approved setup plus session authorization/revocation and permission configuration. Account v1 is non-upgradeable, has an immutable Owner, and intentionally has no recovery path.
 - Session token transfers consume cumulative per-token budgets. Generic calls consume target-and-selector call counts; neither path can send native value.
+- Structural `SessionOperation` inputs are decoded and canonically re-encoded before draft or receipt creation; declared Session/action/asset/amount values must match calldata exactly.
+- Counterfactual `initCode` is rejected until its direct Factory address is locked in the active Runtime Profile, and mixed Factory calldata is rejected.
 - Monetary inputs never accept JavaScript `number` or an implicit decimals default. Asset identity, decimals and uint256 bounds are checked before AA calldata encoding; persisted raw units are strings.
 
 ## Secrets

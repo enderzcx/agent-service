@@ -3,6 +3,7 @@ import {
   createSessionUserOperationDraft,
   estimateSessionUserOperation
 } from '../src/aa/session.js';
+import { isExpectedUndeployedAccountRejection } from '../src/aa/estimateProbe.js';
 import { resolveRuntimeProfile } from '../src/chain/profile.js';
 import { HttpJsonRpcClient } from '../src/chain/rpc.js';
 import { createAssetAmount } from '../src/money/amount.js';
@@ -71,13 +72,13 @@ try {
   );
 } catch (error) {
   const details = describeError(error);
-  const remoteRejection = details['code'] === 'rpc_remote_error';
+  const expectedUndeployedAccount = isExpectedUndeployedAccountRejection(error);
   process.stdout.write(
     `${JSON.stringify(
       {
-        ok: remoteRejection,
+        ok: expectedUndeployedAccount,
         command: 'aa.estimate.probe',
-        status: remoteRejection ? 'bundler_rejected' : 'probe_failed',
+        status: expectedUndeployedAccount ? 'bundler_rejected' : 'probe_failed',
         canWrite: false,
         verificationLevel: 'READONLY_BUNDLER_ESTIMATE',
         accountReadiness: 'not_verified',
@@ -87,5 +88,5 @@ try {
       2
     )}\n`
   );
-  if (!remoteRejection) process.exitCode = 1;
+  if (!expectedUndeployedAccount) process.exitCode = 1;
 }

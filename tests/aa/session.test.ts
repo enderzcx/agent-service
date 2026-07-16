@@ -9,7 +9,10 @@ import {
   estimateSessionUserOperation,
   type SessionBundlerRpc
 } from '../../src/aa/session.js';
-import { BOTCHAIN_TESTNET_PROFILE } from '../../src/chain/profile.js';
+import {
+  BOTCHAIN_TESTNET_PROFILE,
+  chainProfileSchema
+} from '../../src/chain/profile.js';
 import { createAssetAmount, parseAssetAmount } from '../../src/money/amount.js';
 import { createDenyAllWriteGate } from '../../src/security/writeGate.js';
 
@@ -23,6 +26,14 @@ const SETTLEMENT_ASSET = {
   assetId: BOTCHAIN_TESTNET_PROFILE.settlementAsset.assetId,
   decimals: BOTCHAIN_TESTNET_PROFILE.settlementAsset.decimals
 } as const;
+
+const DEPLOYED_PROFILE = chainProfileSchema.parse({
+  ...BOTCHAIN_TESTNET_PROFILE,
+  aa: {
+    ...BOTCHAIN_TESTNET_PROFILE.aa,
+    accountFactoryAddress: FACTORY
+  }
+});
 
 function settlementAmount(value: string) {
   return parseAssetAmount(value, SETTLEMENT_ASSET);
@@ -116,14 +127,14 @@ describe('SessionAA public seam', () => {
 
   it('serializes a read-only bundler estimate and never exposes a send path', async () => {
     const operation = buildSessionTokenTransferCall({
-      profile: BOTCHAIN_TESTNET_PROFILE,
+      profile: DEPLOYED_PROFILE,
       sessionId: SESSION_ID,
       recipient: RECIPIENT,
       amount: settlementAmount('1.25'),
       actionId: ACTION_ID
     });
     const draft = createSessionUserOperationDraft({
-      profile: BOTCHAIN_TESTNET_PROFILE,
+      profile: DEPLOYED_PROFILE,
       sender: ACCOUNT,
       nonce: 0n,
       initCode: buildAccountInitCode({ factoryAddress: FACTORY, owner: OWNER, salt: 7n }),
@@ -150,7 +161,7 @@ describe('SessionAA public seam', () => {
 
     expect(methods).toEqual(['eth_estimateUserOperationGas']);
     expect(String(requestParams[0]?.[1]).toLowerCase()).toBe(
-      BOTCHAIN_TESTNET_PROFILE.entryPoint.address
+      DEPLOYED_PROFILE.entryPoint.address
     );
     const rpcOperation = requestParams[0]?.[0] as Readonly<Record<string, unknown>>;
     expect(rpcOperation['factory']).toBe(FACTORY);
@@ -169,6 +180,56 @@ describe('SessionAA public seam', () => {
         }
       })
     );
+  });
+
+  it('rejects forged calldata and any initCode not locked by the Runtime Profile', () => {
+    const operation = buildSessionTokenTransferCall({
+      profile: BOTCHAIN_TESTNET_PROFILE,
+      sessionId: SESSION_ID,
+      recipient: RECIPIENT,
+      amount: settlementAmount('1.25'),
+      actionId: ACTION_ID
+    });
+
+    expect(() =>
+      createSessionUserOperationDraft({
+        profile: BOTCHAIN_TESTNET_PROFILE,
+        sender: ACCOUNT,
+        nonce: 0n,
+        operation: { ...operation, callData: '0xdeadbeef' }
+      })
+    ).toThrowError(expect.objectContaining({ code: 'aa_operation_invalid' }));
+
+    expect(() =>
+      createSessionUserOperationDraft({
+        profile: BOTCHAIN_TESTNET_PROFILE,
+        sender: ACCOUNT,
+        nonce: 0n,
+        initCode: buildAccountInitCode({ factoryAddress: FACTORY, owner: OWNER, salt: 7n }),
+        operation
+      })
+    ).toThrowError(expect.objectContaining({ code: 'aa_factory_not_configured' }));
+
+    const deployedOperation = buildSessionTokenTransferCall({
+      profile: DEPLOYED_PROFILE,
+      sessionId: SESSION_ID,
+      recipient: RECIPIENT,
+      amount: settlementAmount('1.25'),
+      actionId: ACTION_ID
+    });
+    expect(() =>
+      createSessionUserOperationDraft({
+        profile: DEPLOYED_PROFILE,
+        sender: ACCOUNT,
+        nonce: 0n,
+        initCode: buildAccountInitCode({
+          factoryAddress: '0x5000000000000000000000000000000000000005',
+          owner: OWNER,
+          salt: 7n
+        }),
+        operation: deployedOperation
+      })
+    ).toThrowError(expect.objectContaining({ code: 'aa_factory_mismatch' }));
   });
 
   it('requires a real-length session signature and denies every submission intent', () => {

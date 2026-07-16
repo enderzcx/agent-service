@@ -82,6 +82,15 @@ function exerciseFixture(label: string, createStore: () => Promise<ProfileStore>
           settlement: { ...result.receipt.settlement, raw: '2500001' }
         })
       ).toBe(false);
+      expect(
+        verifySimulationReceipt({
+          ...result.receipt,
+          settlement: {
+            ...result.receipt.settlement,
+            raw: (1n << 256n).toString()
+          }
+        })
+      ).toBe(false);
       await expect(store.list('identity')).resolves.toHaveLength(1);
       await expect(store.list('negotiation')).resolves.toHaveLength(1);
       await expect(store.list('workflow')).resolves.toHaveLength(1);
@@ -196,6 +205,47 @@ describe('dry-run fixture preflight', () => {
           decimals: BOTCHAIN_TESTNET_PROFILE.settlementAsset.decimals
         }),
         settlementOperation,
+        serviceSimulator: {
+          execute() {
+            return Promise.resolve({ delivered: 'must-not-run' });
+          }
+        }
+      })
+    ).rejects.toEqual(
+      expect.objectContaining({ code: 'workflow_settlement_operation_invalid' })
+    );
+    await expect(store.list('workflow')).resolves.toHaveLength(0);
+  });
+
+  it('rejects forged settlement calldata before writing any artifact', async () => {
+    const store = createMemoryProfileStore({
+      profile: BOTCHAIN_TESTNET_PROFILE,
+      clock: () => FIXED_TIME
+    });
+    const settlement = parseAssetAmount('2.5', {
+      assetId: BOTCHAIN_TESTNET_PROFILE.settlementAsset.assetId,
+      decimals: BOTCHAIN_TESTNET_PROFILE.settlementAsset.decimals
+    });
+    const validOperation = buildSessionTokenTransferCall({
+      profile: BOTCHAIN_TESTNET_PROFILE,
+      sessionId: SESSION_ID,
+      recipient: '0x4000000000000000000000000000000000000004',
+      amount: settlement,
+      actionId: ACTION_ID
+    });
+
+    await expect(
+      executeDryRunFixture({
+        profile: BOTCHAIN_TESTNET_PROFILE,
+        store,
+        clock: () => FIXED_TIME,
+        runId: 'commerce-forged-001',
+        jobId: 'job-forged-001',
+        identitySubject: 'agent:buyer-001',
+        negotiationId: 'negotiation-forged-001',
+        termsHash: TERMS_HASH,
+        settlement,
+        settlementOperation: { ...validOperation, callData: '0xdeadbeef' },
         serviceSimulator: {
           execute() {
             return Promise.resolve({ delivered: 'must-not-run' });

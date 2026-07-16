@@ -114,6 +114,30 @@ describe('Commerce Run state machine', () => {
       parseCommerceRun({ ...initial, state: 'completed_simulation' })
     ).toThrowError(expect.objectContaining({ code: 'workflow_state_corrupt' }));
   });
+
+  it('rejects persisted settlement amounts outside uint256', () => {
+    let run = createCommerceRun({ runId: 'commerce-001', occurredAt: time(0) });
+    run = advanceCommerceRun(run, {
+      type: 'verify_identity',
+      evidenceId: 'identity-evidence-001',
+      verificationLevel: 'LOCAL_UNIT',
+      occurredAt: time(1)
+    });
+    run = advanceCommerceRun(run, {
+      type: 'accept_terms',
+      negotiationId: 'negotiation-001',
+      termsHash: TERMS_HASH,
+      settlement: parseAssetAmount('2.5', USDT),
+      occurredAt: time(2)
+    });
+
+    expect(() =>
+      parseCommerceRun({
+        ...run,
+        settlement: { ...run.settlement, raw: (1n << 256n).toString() }
+      })
+    ).toThrowError(expect.objectContaining({ code: 'workflow_state_corrupt' }));
+  });
 });
 
 describe('Job state machine', () => {

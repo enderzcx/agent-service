@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import type { VerificationLevel } from '../kernel/verification.js';
 import {
+  deserializeAssetAmount,
   serializeAssetAmount,
   type AssetAmount,
   type SerializedAssetAmount
@@ -246,6 +247,20 @@ function requireVerification(
   }
 }
 
+function isCanonicalSerializedAmount(value: SerializedAssetAmount): boolean {
+  try {
+    const normalized = serializeAssetAmount(deserializeAssetAmount(value));
+    return (
+      value.schemaVersion === normalized.schemaVersion &&
+      value.assetId === normalized.assetId &&
+      value.decimals === normalized.decimals &&
+      value.raw === normalized.raw
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function parseCommerceRun(value: unknown): CommerceRun {
   const parsed = commerceRunSchema.safeParse(value);
   if (!parsed.success) {
@@ -254,6 +269,9 @@ export function parseCommerceRun(value: unknown): CommerceRun {
     });
   }
   const run = parsed.data;
+  if (run.settlement !== null && !isCanonicalSerializedAmount(run.settlement)) {
+    corruptState('commerce', run.state, 'settlement amount is invalid or non-canonical');
+  }
   const negotiated =
     run.identityEvidenceId !== null &&
     run.negotiationId !== null &&

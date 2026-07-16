@@ -58,7 +58,9 @@ Interface: build and locally validate a session-key ERC-4337 v0.7 UserOperation,
 
 The accepted implementation is a minimal, non-upgradeable `BotchainSessionAccount` deployed by a direct CREATE2 `BotchainSessionAccountFactory`. The immutable Owner may authorize/revoke Sessions and configure cumulative token budgets or target-selector call counts. Normal execution is EntryPoint-only, validation accepts only the configured Session key, native-value execution is absent, and session IDs/action IDs cannot be replayed.
 
-The TypeScript seam constructs the two allowed account calls, binds every draft to the Runtime Profile fingerprint and EntryPoint, emits ERC-7769 `factory`/`factoryData` fields for bundler estimation, and exposes no submission method. A submission intent can only reach the deny-all `WriteGate`.
+The TypeScript seam constructs the two allowed account calls, then decodes and canonically re-encodes every structural `SessionOperation` at the draft and workflow trust boundaries. It binds the declared Session/action/asset/amount to calldata, binds every draft to the Runtime Profile fingerprint and EntryPoint, and accepts ERC-7769 `factory`/`factoryData` only when the direct Factory is locked in that same profile. It exposes no submission method; a submission intent can only reach the deny-all `WriteGate`.
+
+Local integration exact-pins `@account-abstraction/contracts@0.7.0` and executes a signed Session UserOperation through the reference EntryPoint `handleOps` on an ephemeral Hardhat chain. This proves the v0.7 account interface locally, not deployment or inclusion on Botchain.
 
 ### AgentWorkflow
 

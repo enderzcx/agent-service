@@ -2,13 +2,17 @@ import { createHash } from 'node:crypto';
 
 import { z } from 'zod';
 
-import type { SessionOperation } from '../aa/session.js';
+import {
+  validateSessionOperation,
+  type SessionOperation
+} from '../aa/session.js';
 import {
   buildProfileFingerprint,
   type ChainRuntimeProfile
 } from '../chain/profile.js';
 import type { VerificationLevel } from '../kernel/verification.js';
 import {
+  deserializeAssetAmount,
   serializeAssetAmount,
   type AssetAmount,
   type SerializedAssetAmount
@@ -148,6 +152,19 @@ function receiptHash(core: Readonly<z.infer<typeof receiptCoreSchema>>): `sha256
 export function verifySimulationReceipt(receipt: unknown): receipt is SimulationReceipt {
   const parsed = receiptSchema.safeParse(receipt);
   if (!parsed.success) return false;
+  try {
+    const normalized = serializeAssetAmount(deserializeAssetAmount(parsed.data.settlement));
+    if (
+      normalized.schemaVersion !== parsed.data.settlement.schemaVersion ||
+      normalized.assetId !== parsed.data.settlement.assetId ||
+      normalized.decimals !== parsed.data.settlement.decimals ||
+      normalized.raw !== parsed.data.settlement.raw
+    ) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
   const { receiptHash: actual, ...core } = parsed.data;
   return actual === receiptHash(receiptCoreSchema.parse(core));
 }
@@ -188,17 +205,28 @@ function assertProfile(input: ExecuteDryRunFixtureInput): string {
 }
 
 function assertSettlementOperation(
+  profile: ChainRuntimeProfile,
   operation: SessionOperation,
   settlement: SerializedAssetAmount,
   profileFingerprint: string
 ): void {
+  let validated: SessionOperation;
+  try {
+    validated = validateSessionOperation(profile, operation);
+  } catch (error) {
+    throw new DryRunWorkflowError(
+      'Settlement operation failed runtime validation.',
+      'workflow_settlement_operation_invalid',
+      { reason: error instanceof Error ? error.message : String(error) }
+    );
+  }
   if (
-    operation.kind !== 'session-token-transfer' ||
-    operation.canWrite !== false ||
-    operation.verificationLevel !== 'DRY_RUN_SIMULATED' ||
-    operation.profileFingerprint !== profileFingerprint ||
-    operation.settlement === null ||
-    canonicalJson(asJson(operation.settlement)) !== canonicalJson(asJson(settlement))
+    validated.kind !== 'session-token-transfer' ||
+    validated.canWrite !== false ||
+    validated.verificationLevel !== 'DRY_RUN_SIMULATED' ||
+    validated.profileFingerprint !== profileFingerprint ||
+    validated.settlement === null ||
+    canonicalJson(asJson(validated.settlement)) !== canonicalJson(asJson(settlement))
   ) {
     throw new DryRunWorkflowError(
       'Settlement operation does not match the dry-run profile and amount.',
@@ -397,7 +425,12 @@ export async function executeDryRunFixture(
   const profileFingerprint = assertProfile(input);
   const clock = input.clock ?? (() => new Date());
   const settlement = serializeAssetAmount(input.settlement);
-  assertSettlementOperation(input.settlementOperation, settlement, profileFingerprint);
+  assertSettlementOperation(
+    input.profile,
+    input.settlementOperation,
+    settlement,
+    profileFingerprint
+  );
 
   const identityId = derivedId(input.runId, 'identity');
   const identityEvidenceId = derivedId(input.runId, 'identity-evidence');

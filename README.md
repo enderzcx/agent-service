@@ -10,7 +10,7 @@ The repository is being rebuilt from a legacy KTrace implementation as small, in
 - Runtime: Node.js 22+ and strict TypeScript.
 - CLI commands are read-only. The exported Session AA SDK builds/dry-runs operations and exposes no send method.
 - Chain writes are denied in code. There is no deploy, transfer, approve, bridge, or UserOperation send command.
-- G1 includes a minimal non-upgradeable direct CREATE2 Factory/Account and local EVM tests; neither contract is deployed on Botchain yet.
+- G1 includes a minimal non-upgradeable direct CREATE2 Factory/Account, exact-pinned reference EntryPoint v0.7 `handleOps` integration, and local EVM tests; neither contract is deployed on Botchain yet.
 - Monetary APIs use chain-scoped `AssetAmount` values (`assetId`, `decimals`, raw `bigint`); Botchain USDT is six decimals and no 18-decimal fallback exists.
 - G3 code-side workflow proof uses explicit Commerce Run/Job state machines, append-only audit records, and hash-verifiable simulation receipts; real settlement remains unverified.
 - A green read-only preflight proves only `ready_for_dry_run`; it does not prove that contracts are deployed or that a payment was included on-chain.
@@ -43,7 +43,7 @@ Run the explicit G1 bundler estimate probe:
 KTRACE_CHAIN_PROFILE=botchain_testnet npm run aa:estimate:probe
 ```
 
-Before Factory/Account deployment, the expected honest result is `status = bundler_rejected` with `AA20 account not deployed`, `canWrite = false`, and `accountReadiness = not_verified`. This proves the standard ERC-7769 request reached Botchain validation; it does not prove Account readiness or authorize submission.
+Before Factory/Account deployment, the expected honest result is `status = bundler_rejected` with RPC code `-32521`, `AA20 account not deployed`, `canWrite = false`, and `accountReadiness = not_verified`. Authentication, method, transport, and other remote errors fail the command. This proves the standard ERC-7769 request reached Botchain validation; it does not prove Account readiness or authorize submission.
 
 Generate a local profile-scoped workflow evidence bundle:
 

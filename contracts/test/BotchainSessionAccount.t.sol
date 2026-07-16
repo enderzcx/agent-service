@@ -2,9 +2,13 @@
 pragma solidity ^0.8.28;
 
 import {PackedUserOperation} from "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
 
 import {BotchainSessionAccount} from "../src/BotchainSessionAccount.sol";
 import {BotchainSessionAccountFactory} from "../src/BotchainSessionAccountFactory.sol";
+
+/// @dev Test artifact that exposes the exact @account-abstraction/contracts 0.7 EntryPoint.
+contract ReferenceEntryPointV07 is EntryPoint {}
 
 contract MockEntryPoint {
     function validate(
@@ -101,6 +105,23 @@ contract BotchainSessionAccountTest {
         require(address(repeated) == predicted, "factory should return existing account");
         require(deployed.owner() == address(this), "wrong owner");
         require(deployed.entryPoint() == address(entryPoint), "wrong EntryPoint");
+    }
+
+    function testReferenceEntryPointV07CanOwnFactoryAccounts() public {
+        ReferenceEntryPointV07 referenceEntryPoint = new ReferenceEntryPointV07();
+        BotchainSessionAccountFactory referenceFactory = new BotchainSessionAccountFactory(
+            address(referenceEntryPoint)
+        );
+        BotchainSessionAccount referenceAccount = referenceFactory.createAccount(
+            address(this),
+            17
+        );
+
+        require(
+            referenceAccount.entryPoint() == address(referenceEntryPoint),
+            "reference EntryPoint mismatch"
+        );
+        require(referenceAccount.owner() == address(this), "reference owner mismatch");
     }
 
     function testOnlyOwnerCanAuthorizeSession() public {
