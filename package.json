@@ -25,8 +25,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pack:dry-run": "npm pack --dry-run",
     "check:secrets": "node scripts/check-secrets.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:secrets",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run pack:dry-run && npm run check:secrets",
     "profile:show": "tsx src/cli.ts profile show",
     "preflight": "tsx src/cli.ts preflight"
   },

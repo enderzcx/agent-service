@@ -9,19 +9,19 @@ This is the persistent progress artifact. Status vocabulary is strict:
 
 ## Progress compass
 
-位置：S2 G0 fail-closed runtime / L3 verification and commit / T3 stage closeout / G0 push gate
+位置：S3 G0.5 profile isolation / L3 verification and commit / T3 stage closeout / G0.5 push gate
 
-总图：整体第 2/6 阶段；本阶段第 3/3 小片
+总图：整体第 3/6 阶段；本阶段第 3/3 小片
 
-状态：Done 2 / Doing 0 / Todo 4 / Blocked 2
+状态：Done 3 / Doing 0 / Todo 3 / Blocked 2
 
 ## Stage matrix
 
 | Stage | Scope | Acceptance | Status | Evidence |
 |---|---|---|---|---|
 | S1 Source audit | handoff, rules, legacy references, live assumptions | migration map and explicit boundaries | verified | read-only audit; legacy status unchanged |
-| S2 G0 | engineering baseline, locked profile, read-only preflight, deny-all WriteGate, CI | unknown/mixed profile rejects; Botchain probe has no legacy strings; preflight cannot write | verified | `npm run check`: 23 tests + lint/typecheck/build/secret scan; live preflight: chain 968, EntryPoint/USDT hashes, decimals 6, `canWrite=false`; `npm audit`: 0 vulnerabilities |
-| S3 G0.5 | fingerprint-scoped memory/file stores | every artifact/cache/session/job path and envelope rejects wrong fingerprint | todo | pending G0 commit |
+| S2 G0 | engineering baseline, locked profile, read-only preflight, deny-all WriteGate, CI | unknown/mixed profile rejects; Botchain probe has no legacy strings; preflight cannot write | verified | `npm run check`: 23 tests + lint/typecheck/build/secret scan; live preflight: chain 968, EntryPoint/USDT hashes, decimals 6, `canWrite=false`; GitHub Actions run `29488347741`: success |
+| S3 G0.5 | fingerprint-scoped memory/file stores | every artifact/cache/session/job path and envelope rejects wrong fingerprint | verified | shared memory/file adapter contract; 31 tests; fingerprint tamper, namespace split, traversal, duplicate/revision negatives; atomic file write; package dry-run; 0 audit vulnerabilities |
 | S4 G1 | AA contract, factory, local tests, deployment/UserOp dry-run, bundler estimate | three-layer session-only fail closed; no send path | blocked | Owner contract-strategy decision required |
 | S5 G2 | chain-scoped bigint amount model | 6-decimal semantics across budgets/settlement/receipt; 18-decimal negative/compat tests | todo | starts after G1 design lock |
 | S6 G3 | commerce and job state, receipt/evidence/audit | fixture end-to-end proof; real write paths remain not verified without approval | blocked | Owner workflow-source-of-truth decision required |
@@ -34,4 +34,4 @@ This is the persistent progress artifact. Status vocabulary is strict:
 
 ## Next gate
 
-Push G0, then implement and push G0.5. Stop before G1 contract implementation and ask the two questions in `docs/OWNER_DECISIONS.md`.
+Push G0.5 and wait for GitHub Actions terminal state. Then stop before G1 contract implementation and ask the two questions in `docs/OWNER_DECISIONS.md`.
