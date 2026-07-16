@@ -126,6 +126,14 @@ function validateKind(kind: ArtifactKind): void {
   }
 }
 
+function assertMutableKind(kind: ArtifactKind): void {
+  if (kind === 'audit') {
+    throw new ProfileStoreError('Audit records are append-only.', 'store_append_only_kind', {
+      kind
+    });
+  }
+}
+
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -220,6 +228,7 @@ class MemoryProfileStore implements ProfileStore {
   }
 
   async update<T extends JsonValue>(input: UpdateRecordInput<T>): Promise<StoredRecord<T>> {
+    assertMutableKind(input.kind);
     const current = await this.get(input.kind, input.id);
     if (!current) {
       throw new ProfileStoreError('Store record does not exist.', 'store_record_missing', {
@@ -308,6 +317,7 @@ class FileProfileStore implements ProfileStore {
   }
 
   async update<T extends JsonValue>(input: UpdateRecordInput<T>): Promise<StoredRecord<T>> {
+    assertMutableKind(input.kind);
     const current = await this.get(input.kind, input.id);
     if (!current) {
       throw new ProfileStoreError('Store record does not exist.', 'store_record_missing', {

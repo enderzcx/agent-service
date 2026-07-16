@@ -51,10 +51,11 @@ try {
       '--input-type=module',
       '--eval',
       [
-        "import { formatAssetAmount, parseAssetAmount, resolveRuntimeProfile } from '@enderzcx/agent-service';",
+        "import { createCommerceRun, formatAssetAmount, parseAssetAmount, resolveRuntimeProfile } from '@enderzcx/agent-service';",
         "const profile = resolveRuntimeProfile({ KTRACE_CHAIN_PROFILE: 'botchain_testnet' });",
         "const amount = parseAssetAmount('1.000001', { assetId: profile.settlementAsset.assetId, decimals: profile.settlementAsset.decimals });",
-        "process.stdout.write(JSON.stringify({ chainId: profile.chainId, caip2: profile.caip2, raw: amount.raw.toString(), formatted: formatAssetAmount(amount) }));"
+        "const run = createCommerceRun({ runId: 'package-check', occurredAt: '2026-07-16T10:00:00.000Z' });",
+        "process.stdout.write(JSON.stringify({ chainId: profile.chainId, caip2: profile.caip2, raw: amount.raw.toString(), formatted: formatAssetAmount(amount), workflowState: run.state }));"
       ].join(' ')
     ],
     { cwd: consumerRoot }
@@ -64,7 +65,8 @@ try {
     importedProfile.chainId !== 968 ||
     importedProfile.caip2 !== 'eip155:968' ||
     importedProfile.raw !== '1000001' ||
-    importedProfile.formatted !== '1.000001'
+    importedProfile.formatted !== '1.000001' ||
+    importedProfile.workflowState !== 'identity_pending'
   ) {
     throw new Error('Installed package exports returned the wrong profile or amount semantics.');
   }

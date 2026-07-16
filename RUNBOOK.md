@@ -47,6 +47,16 @@ KTRACE_CHAIN_PROFILE=botchain_testnet npm run aa:estimate:probe
 
 The contract command deploys Factory/Account only inside Hardhat's ephemeral local EVM. The estimate probe calls only `eth_estimateUserOperationGas` through the read-only RPC allowlist. Until an approved Botchain deployment exists, `bundler_rejected` / `AA20 account not deployed` is expected and must not be relabeled as Account readiness.
 
+## G3 local workflow evidence
+
+```bash
+KTRACE_CHAIN_PROFILE=botchain_testnet KTRACE_DATA_DIR=.runtime/g3-evidence npm run workflow:dry-run
+```
+
+Expected boundary: `commerceState=completed_simulation`, `jobState=receipted`, `verificationLevel=DRY_RUN_SIMULATED`, `canWrite=false`, and both chain hashes null. Recompute the receipt hash through `verifySimulationReceipt` after reading the profile-scoped receipt JSON. Audit records are append-only, but aggregate records—not audit replay—remain state truth.
+
+If execution stops before the terminal state, inspect the nonterminal workflow/job records. The file adapter does not claim cross-record transactions or multi-writer recovery, so never infer completion from a later audit record alone.
+
 ## Common failures
 
 | Code | Meaning | Action |

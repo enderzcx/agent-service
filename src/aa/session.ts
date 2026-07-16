@@ -13,7 +13,12 @@ import {
 
 import { buildProfileFingerprint, type ChainRuntimeProfile } from '../chain/profile.js';
 import type { VerificationLevel } from '../kernel/verification.js';
-import { createAssetAmount, type AssetAmount } from '../money/amount.js';
+import {
+  createAssetAmount,
+  serializeAssetAmount,
+  type AssetAmount,
+  type SerializedAssetAmount
+} from '../money/amount.js';
 import type { WriteGate } from '../security/writeGate.js';
 
 const SESSION_ACCOUNT_ABI = parseAbi([
@@ -59,6 +64,7 @@ export interface SessionOperation {
   readonly sessionId: Hex;
   readonly actionId: Hex;
   readonly callData: Hex;
+  readonly settlement: SerializedAssetAmount | null;
   readonly profileFingerprint: string;
   readonly canWrite: false;
   readonly verificationLevel: Extract<VerificationLevel, 'DRY_RUN_SIMULATED'>;
@@ -184,7 +190,8 @@ function requireAddress(value: string, label: string): Address {
 function baseOperation(
   input: SessionAuthorityInput,
   kind: SessionOperation['kind'],
-  callData: Hex
+  callData: Hex,
+  settlement: SerializedAssetAmount | null = null
 ): SessionOperation {
   assertSessionAuthority(input);
   return Object.freeze({
@@ -192,6 +199,7 @@ function baseOperation(
     sessionId: input.sessionId,
     actionId: input.actionId,
     callData,
+    settlement,
     profileFingerprint: buildProfileFingerprint(input.profile).fingerprint,
     canWrite: false,
     verificationLevel: 'DRY_RUN_SIMULATED'
@@ -231,7 +239,7 @@ export function buildSessionTokenTransferCall(
     functionName: 'executeTokenTransfer',
     args: [input.sessionId, token, recipient, amount.raw, input.actionId]
   });
-  return baseOperation(input, 'session-token-transfer', callData);
+  return baseOperation(input, 'session-token-transfer', callData, serializeAssetAmount(amount));
 }
 
 export function buildSessionCall(input: BuildSessionCallInput): SessionOperation {

@@ -64,13 +64,19 @@ The TypeScript seam constructs the two allowed account calls, binds every draft 
 
 Interface: advance explicit commerce and job states through identity, negotiation, settlement and execution ports; return typed receipt/evidence.
 
-Commerce Run and Job truth live in explicit state machines. A separate append-only Audit Event log records commands and transitions but cannot reconstruct or override aggregate state. This keeps evidence storage from becoming a hidden event-sourced domain model.
+Commerce Run states are `identity_pending -> negotiation_pending -> settlement_pending -> settlement_simulated -> service_pending -> receipt_ready -> completed_simulation`; Job states are `created -> running_simulation -> succeeded_simulation|failed_simulation -> receipted`. Every command validates its source state, evidence level, timestamp and required references. Persisted aggregates are revalidated for state/field consistency before any transition.
+
+The code-side fixture invokes an injected `DryRunServiceSimulator`, binds its settlement receipt to the exact SessionOperation amount/profile, and stops without a receipt if simulator infrastructure throws. Real settlement/success states are deliberately absent until an Owner-approved write capability and receipt verifier exist.
+
+Commerce Run and Job records are the only domain truth. A separate append-only Audit Event log records commands and transitions but cannot reconstruct or override aggregate state. `ProfileStore` rejects audit updates, and injected audit records do not change aggregate reads.
 
 ### Evidence
 
 Interface: construct a proof bundle whose variant is determined by `VerificationLevel`.
 
 Dry-run/read-only variants cannot contain successful real transaction claims. Testnet-write variants require Owner approval plus transaction receipt/event-log evidence. Explorer links are secondary cross-checks, never the sole proof source.
+
+Simulation receipts contain the profile fingerprint, six-decimal serialized settlement amount, identity/settlement/service evidence references, null transaction/UserOperation hashes, and a canonical SHA-256 receipt hash that can be recomputed after file readback.
 
 ## External ports
 
@@ -88,6 +94,7 @@ Dry-run/read-only variants cannot contain successful real transaction claims. Te
 - G0.5 data root: `${KTRACE_DATA_DIR}/<full-profile-namespace>/...`.
 - Runtime envelopes include schema version, profile fingerprint, namespace, artifact kind, ID and verification level.
 - Atomic temp-file + rename protects one writer from partial files.
+- Workflow aggregate updates and independent audit appends are not a cross-file transaction. The current fixture is single-writer; an I/O interruption can leave an incomplete nonterminal run that must be inspected, never inferred complete from audit events.
 - Cross-process locking, database transactions and multi-writer idempotency are not claimed in the initial file adapter. Adding them is a separate G3 design/release gate.
 - Existing Kite/HashKey records are not rewritten or imported.
 

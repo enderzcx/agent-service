@@ -9,11 +9,11 @@ This is the persistent progress artifact. Status vocabulary is strict:
 
 ## Progress compass
 
-位置：S6 G3 workflow proof / L1 domain state seams / T1 transition acceptance tests / next
+位置：Final review / L1 two-axis code review / T1 evidence and residual-risk audit / next
 
-总图：整体第 6/6 阶段；G0-G1 已由远端 CI 验证，G2 代码侧已由本地确定性检查验证
+总图：G0-G2 已由远端 CI 验证；G3 代码侧实现与本地证据完成，待远端 CI 和最终双轴审查
 
-状态：Done 5 / Doing 0 / Todo 1 / Blocked 1
+状态：Done 6 / Doing 0 / Todo 0 / Blocked 1
 
 ## Stage matrix
 
@@ -24,12 +24,12 @@ This is the persistent progress artifact. Status vocabulary is strict:
 | S3 G0.5 | fingerprint-scoped memory/file stores | every artifact/cache/session/job path and envelope rejects wrong fingerprint | verified | shared memory/file adapter contract; full SHA-256 physical namespace; 34 tests; profile/path/fingerprint/revision negatives; atomic file write; package dry-run plus isolated exports/bin install; pre-G1 profile fingerprint `sha256:900388...c14fe`; 0 audit vulnerabilities; GitHub Actions runs `29488622184`, `29488776211`, and review-repair run `29489421663`: success; final annotations empty |
 | S4 G1 | AA contract, factory, local tests, local deployment/UserOp dry-run, bundler estimate | three-layer session-only fail closed; no send path | verified | commit `a4f91d9`; direct non-upgradeable CREATE2 Factory/Account; 8 Solidity + 39 TypeScript tests; standard ERC-7769 serialization; full `npm run check`; isolated installed-package verification; live fingerprint `sha256:2412e0...d23af6`; live estimate reached Botchain and honestly returned `AA20 account not deployed` / RPC `-32521`, `canWrite=false`, Account readiness `not_verified`; 0 audit vulnerabilities; GitHub Actions run `29490936769`: success; annotations empty |
 | S5 G2 | chain-scoped bigint amount model | 6-decimal semantics across budgets/settlement/receipt; 18-decimal negative/compat tests | verified | commit `b30f088`; public `AssetAmount`; strict decimal parsing/formatting; schema-versioned raw-string storage; checked same-asset arithmetic and uint256 bounds; Session AA rejects native/same-asset-18-decimal inputs; 5 focused tests; full `npm run check`: 44 TypeScript + 8 Solidity tests; isolated installed-package amount import; live read-only estimate regression; 0 audit vulnerabilities; GitHub Actions run `29491372895`: success; annotations empty |
-| S6 G3 | commerce and job state, receipt/evidence/audit | fixture end-to-end proof; real write paths remain not verified without approval | todo | Owner selected explicit state machines plus independent append-only audit log |
+| S6 G3 | commerce and job state, receipt/evidence/audit | fixture end-to-end proof; real write paths remain not verified without approval | verified | explicit Commerce Run + Job state machines; persisted-state invariants; append-only audit Store contract; injected service simulator and failure stop; SessionOperation/amount/profile binding; canonical receipt hash; memory + atomic-file fixture tests; full `npm run check`: 57 TypeScript + 8 Solidity tests; isolated installed-package workflow import; actual ignored artifact readback: identity 1, negotiation 1, workflow 1, job 1, UserOperation 1, service result 1, receipt 1, evidence 3, audit 11; receipt `sha256:b0be1a...a25315e` recomputed true; transaction/UserOperation hashes null; live preflight and AA estimate regression; 0 audit vulnerabilities; remote CI pending |
 
 ## Verification ceiling without chain-write approval
 
 - G1 code/dry-run: verified through `READONLY_BUNDLER_ESTIMATE`; deployment, setup and inclusion remain `not_verified`.
-- G3 settlement/inclusion: `not_verified`.
+- G3 local fixture: `DRY_RUN_SIMULATED`; real settlement/inclusion: `not_verified`.
 - Full testnet cutover: `HOLD_FULL_TESTNET`.
 
 ## Review closure
@@ -41,4 +41,4 @@ This is the persistent progress artifact. Status vocabulary is strict:
 
 ## Next gate
 
-Implement G3 as explicit Commerce Run and Job state machines plus an independent append-only audit/evidence log. Prove the fixture path `identity -> negotiation -> settlement -> service execution -> receipt/evidence/audit`, reject skipped/replayed transitions, and keep all settlement/inclusion claims below `OWNER_APPROVED_TESTNET_WRITE`. No deployment or submission is authorized.
+Run the required final two-axis code review, repair all P0-P2 findings, rerun the full local/live-readonly/remote verification chain, then issue the code-side GO versus full-testnet HOLD decision and the minimal Owner-approved write checklist. No deployment or submission is authorized.

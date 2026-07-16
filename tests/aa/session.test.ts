@@ -39,6 +39,11 @@ describe('SessionAA public seam', () => {
     });
 
     expect(operation.kind).toBe('session-token-transfer');
+    expect(operation.settlement).toEqual({
+      schemaVersion: 1,
+      ...SETTLEMENT_ASSET,
+      raw: '1250000'
+    });
     expect(operation.callData.startsWith('0x625b938b')).toBe(true);
     expect(operation.callData.toLowerCase()).toContain(
       BOTCHAIN_TESTNET_PROFILE.settlementAsset.tokenAddress.slice(2).toLowerCase()

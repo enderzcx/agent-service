@@ -108,6 +108,26 @@ function exerciseStoreContract(
         );
       }
     });
+
+    it('keeps audit records append-only', async () => {
+      const store = await createStore();
+      await store.create({
+        kind: 'audit',
+        id: 'audit-001',
+        verificationLevel: 'LOCAL_UNIT',
+        payload: { command: 'created' }
+      });
+
+      await expect(
+        store.update({
+          kind: 'audit',
+          id: 'audit-001',
+          expectedRevision: 1,
+          verificationLevel: 'LOCAL_UNIT',
+          payload: { command: 'rewritten' }
+        })
+      ).rejects.toEqual(expect.objectContaining({ code: 'store_append_only_kind' }));
+    });
   });
 }
 

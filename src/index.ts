@@ -6,3 +6,6 @@ export * from './kernel/verification.js';
 export * from './money/amount.js';
 export * from './security/writeGate.js';
 export * from './storage/profileStore.js';
+export * from './workflow/audit.js';
+export * from './workflow/dryRun.js';
+export * from './workflow/stateMachine.js';

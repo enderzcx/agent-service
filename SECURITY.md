@@ -27,6 +27,8 @@ Report vulnerabilities privately to the repository owner rather than opening an 
 
 Every artifact carries a verification level. A dry-run or read-only artifact must not include a successful real transaction claim. `OWNER_APPROVED_TESTNET_WRITE` requires an approved action plus RPC receipt/event-log evidence; an explorer page alone is insufficient.
 
+Workflow audit records are append-only and independent from aggregate truth. Simulation receipts are canonical-hashed and force transaction/UserOperation hashes to null; service-simulator exceptions cannot produce a success receipt.
+
 ## Supported versions
 
 There is no supported production release yet. Security fixes land on the active development branch until a release policy is declared.
