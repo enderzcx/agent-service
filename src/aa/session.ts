@@ -13,6 +13,7 @@ import {
 
 import { buildProfileFingerprint, type ChainRuntimeProfile } from '../chain/profile.js';
 import type { VerificationLevel } from '../kernel/verification.js';
+import { createAssetAmount, type AssetAmount } from '../money/amount.js';
 import type { WriteGate } from '../security/writeGate.js';
 
 const SESSION_ACCOUNT_ABI = parseAbi([
@@ -65,7 +66,7 @@ export interface SessionOperation {
 
 interface BuildTokenTransferInput extends SessionAuthorityInput {
   readonly recipient: Address;
-  readonly rawAmount: bigint;
+  readonly amount: AssetAmount;
 }
 
 interface BuildSessionCallInput extends SessionAuthorityInput {
@@ -202,16 +203,33 @@ export function buildSessionTokenTransferCall(
 ): SessionOperation {
   assertSessionAuthority(input);
   const recipient = requireAddress(input.recipient, 'recipient');
-  if (input.rawAmount <= 0n) {
-    throw new SessionAAError('rawAmount must be positive.', 'aa_amount_invalid', {
-      rawAmount: input.rawAmount.toString()
+  const amount = createAssetAmount(input.amount, input.amount.raw);
+  if (
+    amount.assetId !== input.profile.settlementAsset.assetId.toLowerCase() ||
+    amount.decimals !== input.profile.settlementAsset.decimals
+  ) {
+    throw new SessionAAError(
+      'Session token transfers require the locked settlement asset and decimals.',
+      'aa_settlement_asset_mismatch',
+      {
+        expected: {
+          assetId: input.profile.settlementAsset.assetId,
+          decimals: input.profile.settlementAsset.decimals
+        },
+        actual: { assetId: amount.assetId, decimals: amount.decimals }
+      }
+    );
+  }
+  if (amount.raw <= 0n) {
+    throw new SessionAAError('Settlement amount must be positive.', 'aa_amount_invalid', {
+      raw: amount.raw.toString()
     });
   }
   const token = requireAddress(input.profile.settlementAsset.tokenAddress, 'settlement token');
   const callData = encodeFunctionData({
     abi: SESSION_ACCOUNT_ABI,
     functionName: 'executeTokenTransfer',
-    args: [input.sessionId, token, recipient, input.rawAmount, input.actionId]
+    args: [input.sessionId, token, recipient, amount.raw, input.actionId]
   });
   return baseOperation(input, 'session-token-transfer', callData);
 }

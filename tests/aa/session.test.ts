@@ -10,6 +10,7 @@ import {
   type SessionBundlerRpc
 } from '../../src/aa/session.js';
 import { BOTCHAIN_TESTNET_PROFILE } from '../../src/chain/profile.js';
+import { createAssetAmount, parseAssetAmount } from '../../src/money/amount.js';
 import { createDenyAllWriteGate } from '../../src/security/writeGate.js';
 
 const SESSION_ID = `0x${'11'.repeat(32)}` as const;
@@ -18,6 +19,14 @@ const ACCOUNT = '0x1000000000000000000000000000000000000001';
 const FACTORY = '0x2000000000000000000000000000000000000002';
 const OWNER = '0x3000000000000000000000000000000000000003';
 const RECIPIENT = '0x4000000000000000000000000000000000000004';
+const SETTLEMENT_ASSET = {
+  assetId: BOTCHAIN_TESTNET_PROFILE.settlementAsset.assetId,
+  decimals: BOTCHAIN_TESTNET_PROFILE.settlementAsset.decimals
+} as const;
+
+function settlementAmount(value: string) {
+  return parseAssetAmount(value, SETTLEMENT_ASSET);
+}
 
 describe('SessionAA public seam', () => {
   it('builds only the dedicated Botchain token-transfer account call', () => {
@@ -25,7 +34,7 @@ describe('SessionAA public seam', () => {
       profile: BOTCHAIN_TESTNET_PROFILE,
       sessionId: SESSION_ID,
       recipient: RECIPIENT,
-      rawAmount: 1_250_000n,
+      amount: settlementAmount('1.25'),
       actionId: ACTION_ID
     });
 
@@ -52,10 +61,37 @@ describe('SessionAA public seam', () => {
         profile: BOTCHAIN_TESTNET_PROFILE,
         sessionId: '0x1234',
         recipient: RECIPIENT,
-        rawAmount: 1n,
+        amount: settlementAmount('0.000001'),
         actionId: ACTION_ID
       })
     ).toThrowError(expect.objectContaining({ code: 'aa_bytes32_invalid' }));
+    expect(() =>
+      buildSessionTokenTransferCall({
+        profile: BOTCHAIN_TESTNET_PROFILE,
+        sessionId: SESSION_ID,
+        recipient: RECIPIENT,
+        amount: createAssetAmount(
+          {
+            assetId: BOTCHAIN_TESTNET_PROFILE.nativeAsset.assetId,
+            decimals: BOTCHAIN_TESTNET_PROFILE.nativeAsset.decimals
+          },
+          1n
+        ),
+        actionId: ACTION_ID
+      })
+    ).toThrowError(expect.objectContaining({ code: 'aa_settlement_asset_mismatch' }));
+    expect(() =>
+      buildSessionTokenTransferCall({
+        profile: BOTCHAIN_TESTNET_PROFILE,
+        sessionId: SESSION_ID,
+        recipient: RECIPIENT,
+        amount: createAssetAmount(
+          { assetId: BOTCHAIN_TESTNET_PROFILE.settlementAsset.assetId, decimals: 18 },
+          1_000_000_000_000_000_000n
+        ),
+        actionId: ACTION_ID
+      })
+    ).toThrowError(expect.objectContaining({ code: 'aa_settlement_asset_mismatch' }));
     expect(() =>
       buildSessionCall({
         profile: BOTCHAIN_TESTNET_PROFILE,
@@ -78,7 +114,7 @@ describe('SessionAA public seam', () => {
       profile: BOTCHAIN_TESTNET_PROFILE,
       sessionId: SESSION_ID,
       recipient: RECIPIENT,
-      rawAmount: 1_250_000n,
+      amount: settlementAmount('1.25'),
       actionId: ACTION_ID
     });
     const draft = createSessionUserOperationDraft({

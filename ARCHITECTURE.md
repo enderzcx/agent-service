@@ -46,6 +46,12 @@ Interface: create/read/list typed envelopes within one materialized profile iden
 
 Each envelope and physical namespace must match the full fingerprint of `{schema, profile, chain, RPC, bundler, explorer, EntryPoint address/code hash, settlement asset address/code hash/decimals, AA deployment identity, signing policy}`. G0.5 provides memory and atomic-file adapters; multi-writer support is not claimed.
 
+### AssetAmount
+
+Interface: create, parse, format, serialize and perform checked arithmetic on `{assetId, decimals, raw bigint}`.
+
+Decimal text is canonical and non-negative; precision beyond the asset's declared decimals, scientific notation, JavaScript `number`, uint256 overflow/underflow and cross-asset arithmetic fail closed. Persistence uses schema-versioned decimal strings for raw units so JSON never coerces or truncates `bigint`. Session AA accepts only an AssetAmount matching the Runtime Profile's settlement asset identity and six-decimal Botchain USDT semantics.
+
 ### SessionAA
 
 Interface: build and locally validate a session-key ERC-4337 v0.7 UserOperation, then hand any submission intent to `WriteGate`.

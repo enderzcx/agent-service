@@ -5,6 +5,7 @@ import {
 } from '../src/aa/session.js';
 import { resolveRuntimeProfile } from '../src/chain/profile.js';
 import { HttpJsonRpcClient } from '../src/chain/rpc.js';
+import { createAssetAmount } from '../src/money/amount.js';
 
 const PROBE_SENDER = '0x1000000000000000000000000000000000000001';
 const PROBE_RECIPIENT = '0x4000000000000000000000000000000000000004';
@@ -32,7 +33,13 @@ const operation = buildSessionTokenTransferCall({
   profile,
   sessionId: PROBE_SESSION_ID,
   recipient: PROBE_RECIPIENT,
-  rawAmount: 1n,
+  amount: createAssetAmount(
+    {
+      assetId: profile.settlementAsset.assetId,
+      decimals: profile.settlementAsset.decimals
+    },
+    1n
+  ),
   actionId: PROBE_ACTION_ID
 });
 const draft = createSessionUserOperationDraft({

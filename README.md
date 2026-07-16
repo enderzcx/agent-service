@@ -11,6 +11,7 @@ The repository is being rebuilt from a legacy KTrace implementation as small, in
 - CLI commands are read-only. The exported Session AA SDK builds/dry-runs operations and exposes no send method.
 - Chain writes are denied in code. There is no deploy, transfer, approve, bridge, or UserOperation send command.
 - G1 includes a minimal non-upgradeable direct CREATE2 Factory/Account and local EVM tests; neither contract is deployed on Botchain yet.
+- Monetary APIs use chain-scoped `AssetAmount` values (`assetId`, `decimals`, raw `bigint`); Botchain USDT is six decimals and no 18-decimal fallback exists.
 - A green read-only preflight proves only `ready_for_dry_run`; it does not prove that contracts are deployed or that a payment was included on-chain.
 - Full testnet migration remains `HOLD_FULL_TESTNET` until Owner-approved write evidence closes G1-G3.
 
@@ -69,5 +70,7 @@ npm run check
 ```
 
 Solidity is compiled with `solc 0.8.28`, optimizer runs `200`, and EVM target `paris`; dependencies are exact-pinned in `package-lock.json`.
+
+Persist amounts through `serializeAssetAmount` / `deserializeAssetAmount`; raw units are stored as decimal strings because JSON cannot losslessly encode `bigint` directly.
 
 Operational and security boundaries are in [RUNBOOK.md](RUNBOOK.md) and [SECURITY.md](SECURITY.md).

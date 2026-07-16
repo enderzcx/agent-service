@@ -51,16 +51,22 @@ try {
       '--input-type=module',
       '--eval',
       [
-        "import { resolveRuntimeProfile } from '@enderzcx/agent-service';",
+        "import { formatAssetAmount, parseAssetAmount, resolveRuntimeProfile } from '@enderzcx/agent-service';",
         "const profile = resolveRuntimeProfile({ KTRACE_CHAIN_PROFILE: 'botchain_testnet' });",
-        "process.stdout.write(JSON.stringify({ chainId: profile.chainId, caip2: profile.caip2 }));"
+        "const amount = parseAssetAmount('1.000001', { assetId: profile.settlementAsset.assetId, decimals: profile.settlementAsset.decimals });",
+        "process.stdout.write(JSON.stringify({ chainId: profile.chainId, caip2: profile.caip2, raw: amount.raw.toString(), formatted: formatAssetAmount(amount) }));"
       ].join(' ')
     ],
     { cwd: consumerRoot }
   );
   const importedProfile = JSON.parse(importOutput);
-  if (importedProfile.chainId !== 968 || importedProfile.caip2 !== 'eip155:968') {
-    throw new Error('Installed package export returned the wrong profile identity.');
+  if (
+    importedProfile.chainId !== 968 ||
+    importedProfile.caip2 !== 'eip155:968' ||
+    importedProfile.raw !== '1000001' ||
+    importedProfile.formatted !== '1.000001'
+  ) {
+    throw new Error('Installed package exports returned the wrong profile or amount semantics.');
   }
 
   const binOutput = run(
