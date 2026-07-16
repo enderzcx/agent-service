@@ -10,3 +10,14 @@ node_modules/
 dist/
 coverage/
 *.log
+
+# Local agent/runtime state
+.grok-companion/
+.artifacts/
+.runtime/
+
+# Local test and editor state
+.vitest/
+*.tsbuildinfo
+.idea/
+.vscode/

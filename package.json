@@ -1,0 +1,45 @@
+{
+  "name": "@enderzcx/agent-service",
+  "version": "0.1.0",
+  "description": "Fail-closed Botchain agent service runtime and auditable workflow core.",
+  "type": "module",
+  "private": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "ARCHITECTURE.md",
+    "SECURITY.md"
+  ],
+  "bin": {
+    "agent-service": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run check:secrets",
+    "profile:show": "tsx src/cli.ts profile show",
+    "preflight": "tsx src/cli.ts preflight"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.1",
+    "vitest": "^4.0.18"
+  }
+}

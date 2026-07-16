@@ -1,0 +1,12 @@
+export const VERIFICATION_LEVELS = [
+  'LOCAL_UNIT',
+  'DRY_RUN_SIMULATED',
+  'READONLY_RPC',
+  'READONLY_BUNDLER_ESTIMATE',
+  'OWNER_APPROVED_TESTNET_WRITE'
+] as const;
+
+export type VerificationLevel = (typeof VERIFICATION_LEVELS)[number];
+
+export const MAX_UNAPPROVED_VERIFICATION_LEVEL: VerificationLevel =
+  'READONLY_BUNDLER_ESTIMATE';
