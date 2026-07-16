@@ -26,8 +26,10 @@ describe('ChainRuntime profile interface', () => {
     expect(profile.caip2).toBe('eip155:968');
     expect(profile.entryPoint.version).toBe('0.7');
     expect(profile.settlementAsset.decimals).toBe(6);
+    expect(profile.aa.deploymentStrategy).toBe('direct-create2');
+    expect(profile.aa.accountVersion).toBe('botchain-session-account-v1');
     expect(profile.aa.accountFactoryAddress).toBeNull();
-    expect(profile.aa.accountImplementationAddress).toBeNull();
+    expect(profile.aa).not.toHaveProperty('accountImplementationAddress');
   });
 
   it('rejects conflicting selectors, locked overrides, and legacy chain variables', () => {
@@ -96,7 +98,7 @@ describe('ChainRuntime profile interface', () => {
         ...BOTCHAIN_TESTNET_PROFILE,
         aa: {
           ...BOTCHAIN_TESTNET_PROFILE.aa,
-          accountFactoryAddress: '0x0000000000000000000000000000000000000001'
+          accountImplementationAddress: '0x0000000000000000000000000000000000000001'
         }
       }).success
     ).toBe(false);

@@ -9,6 +9,7 @@
   },
   "files": [
     "dist/",
+    "contracts/src/",
     "README.md",
     "ARCHITECTURE.md",
     "SECURITY.md"
@@ -21,6 +22,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "contracts:compile": "hardhat compile --build-profile production",
+    "contracts:test": "hardhat test solidity --build-profile production",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
@@ -28,17 +31,22 @@
     "pack:dry-run": "npm pack --dry-run",
     "verify:package": "node scripts/verify-package.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run pack:dry-run && npm run verify:package && npm run check:secrets",
+    "check": "npm run lint && npm run typecheck && npm run contracts:test && npm test && npm run build && npm run pack:dry-run && npm run verify:package && npm run check:secrets",
+    "aa:estimate:probe": "tsx scripts/probe-session-estimate.ts",
     "profile:show": "tsx src/cli.ts profile show",
     "preflight": "tsx src/cli.ts preflight"
   },
   "dependencies": {
+    "@account-abstraction/contracts": "0.8.0",
+    "@openzeppelin/contracts": "5.4.0",
+    "viem": "2.55.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^24.10.1",
     "eslint": "^9.39.2",
+    "hardhat": "3.9.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1",

@@ -50,13 +50,15 @@ Each envelope and physical namespace must match the full fingerprint of `{schema
 
 Interface: build and locally validate a session-key ERC-4337 v0.7 UserOperation, then hand any submission intent to `WriteGate`.
 
-Contract choice is intentionally not locked yet. See Pending Owner Decisions. No G1 implementation may silently carry over owner/EOA normal execution.
+The accepted implementation is a minimal, non-upgradeable `BotchainSessionAccount` deployed by a direct CREATE2 `BotchainSessionAccountFactory`. The immutable Owner may authorize/revoke Sessions and configure cumulative token budgets or target-selector call counts. Normal execution is EntryPoint-only, validation accepts only the configured Session key, native-value execution is absent, and session IDs/action IDs cannot be replayed.
+
+The TypeScript seam constructs the two allowed account calls, binds every draft to the Runtime Profile fingerprint and EntryPoint, emits ERC-7769 `factory`/`factoryData` fields for bundler estimation, and exposes no submission method. A submission intent can only reach the deny-all `WriteGate`.
 
 ### AgentWorkflow
 
 Interface: advance explicit commerce and job states through identity, negotiation, settlement and execution ports; return typed receipt/evidence.
 
-Whether state is event-sourced or held in explicit state machines is an Owner decision. The current recommendation is explicit state machines with a separate append-only audit log so evidence storage does not become the hidden source of truth.
+Commerce Run and Job truth live in explicit state machines. A separate append-only Audit Event log records commands and transitions but cannot reconstruct or override aggregate state. This keeps evidence storage from becoming a hidden event-sourced domain model.
 
 ### Evidence
 
@@ -72,7 +74,7 @@ Dry-run/read-only variants cannot contain successful real transaction claims. Te
 | Bundler RPC | HTTPS ERC-4337 RPC | fixture bundler | wrong chain/EntryPoint -> fail closed |
 | Store | atomic local files initially | in-memory | fingerprint mismatch -> reject |
 | Identity | pending | deterministic fake | unverified -> no negotiation |
-| Settlement | pending session AA | deterministic dry-run | no proof -> no execution |
+| Settlement | session-only AA after approved deployment/setup | deterministic dry-run | no proof -> no execution |
 | Service executor | pending | fixture executor | failure -> failed receipt, never success |
 
 ## Data and concurrency
@@ -83,17 +85,10 @@ Dry-run/read-only variants cannot contain successful real transaction claims. Te
 - Cross-process locking, database transactions and multi-writer idempotency are not claimed in the initial file adapter. Adding them is a separate G3 design/release gate.
 - Existing Kite/HashKey records are not rewritten or imported.
 
-## Pending Owner decisions
+## Accepted decisions and remaining gate
 
-1. AA contract strategy:
-   - pin and tighten legacy KTrace V3 Account + FactoryV2; or
-   - implement a minimal Botchain-specific session account/factory.
-2. Workflow source of truth:
-   - event-sourced workflow state; or
-   - explicit commerce/job state machines plus an independent audit/evidence log.
-
-Implementation stops before these design locks. The current recommendation and tradeoffs live in `docs/OWNER_DECISIONS.md`.
+Ender accepted the minimal direct CREATE2 Session Account and explicit state-machine/independent-audit architecture on 2026-07-16. The remaining Owner gate is operational: the exact Factory deployment, Account creation, Session setup, funding/transfer limits and UserOperation submission must be approved separately before any Botchain write.
 
 ## Rollback
 
-Every stage is a separate commit. Code rollback is `git revert <stage-commit>`. No data migration or chain write occurs before explicit approval, so G0/G0.5 rollback has no external-state rollback requirement.
+Every stage is a separate commit. Code rollback is `git revert <stage-commit>`. No data migration or chain write occurs before explicit approval, so code-side G0-G3 rollback has no external-state rollback requirement.

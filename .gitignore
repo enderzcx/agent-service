@@ -18,6 +18,7 @@ coverage/
 
 # Local test and editor state
 .vitest/
+.cache/
 *.tsbuildinfo
 .idea/
 .vscode/

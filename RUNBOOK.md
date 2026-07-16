@@ -38,6 +38,15 @@ Expected successful boundary:
 
 This result is not permission to deploy or send a UserOperation.
 
+## G1 local and read-only verification
+
+```bash
+npm run contracts:test
+KTRACE_CHAIN_PROFILE=botchain_testnet npm run aa:estimate:probe
+```
+
+The contract command deploys Factory/Account only inside Hardhat's ephemeral local EVM. The estimate probe calls only `eth_estimateUserOperationGas` through the read-only RPC allowlist. Until an approved Botchain deployment exists, `bundler_rejected` / `AA20 account not deployed` is expected and must not be relabeled as Account readiness.
+
 ## Common failures
 
 | Code | Meaning | Action |
@@ -51,4 +60,4 @@ This result is not permission to deploy or send a UserOperation.
 
 ## Rollback
 
-G0/G0.5 have no external writes. Revert the stage commit and delete only the new ignored local `.runtime/` directory if desired. Never modify or migrate legacy runtime data as part of rollback.
+Code-side G0-G3 have no external writes. Revert the relevant stage commit and delete only new ignored local `.runtime/` data if desired. Never modify or migrate legacy runtime data as part of rollback.

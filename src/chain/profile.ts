@@ -42,13 +42,18 @@ export const chainProfileSchema = z
       decimals: z.number().int().min(0).max(255),
       expectedCodeHash: codeHashSchema
     }),
-    aa: z.object({
-      accountFactoryAddress: addressSchema.nullable(),
-      accountImplementationAddress: addressSchema.nullable(),
-      ownerUserOperationAllowed: z.literal(false),
-      eoaFallbackAllowed: z.literal(false),
-      backendSigningAllowed: z.literal(false)
-    })
+    aa: z
+      .object({
+        deploymentStrategy: z.literal('direct-create2'),
+        accountVersion: z.literal('botchain-session-account-v1'),
+        factoryVersion: z.literal('botchain-session-factory-v1'),
+        accountFactoryAddress: addressSchema.nullable(),
+        ownerUserOperationAllowed: z.literal(false),
+        eoaFallbackAllowed: z.literal(false),
+        backendSigningAllowed: z.literal(false),
+        nativeValueExecutionAllowed: z.literal(false)
+      })
+      .strict()
   })
   .strict()
   .superRefine((profile, context) => {
@@ -80,15 +85,6 @@ export const chainProfileSchema = z
       });
     }
 
-    const hasFactory = profile.aa.accountFactoryAddress !== null;
-    const hasImplementation = profile.aa.accountImplementationAddress !== null;
-    if (hasFactory !== hasImplementation) {
-      context.addIssue({
-        code: 'custom',
-        path: ['aa'],
-        message: 'AA factory and account implementation addresses must be configured together.'
-      });
-    }
   });
 
 export type ChainRuntimeProfile = Readonly<z.infer<typeof chainProfileSchema>>;
@@ -124,11 +120,14 @@ const rawBotchainTestnetProfile = {
     expectedCodeHash: '0x0b70fe4156600e95ec26f02f62ac74c98a9d57758300ebdbdd8ce4477c5d8048'
   },
   aa: {
+    deploymentStrategy: 'direct-create2',
+    accountVersion: 'botchain-session-account-v1',
+    factoryVersion: 'botchain-session-factory-v1',
     accountFactoryAddress: null,
-    accountImplementationAddress: null,
     ownerUserOperationAllowed: false,
     eoaFallbackAllowed: false,
-    backendSigningAllowed: false
+    backendSigningAllowed: false,
+    nativeValueExecutionAllowed: false
   }
 } as const;
 
@@ -240,7 +239,7 @@ function assertLockedOverrides(environment: Environment): void {
     },
     {
       name: 'KTRACE_AA_ACCOUNT_IMPLEMENTATION',
-      expected: BOTCHAIN_TESTNET_PROFILE.aa.accountImplementationAddress,
+      expected: null,
       normalize: normalizeAddress
     }
   ];
@@ -321,15 +320,16 @@ function fingerprintPayload(profile: ChainRuntimeProfile): Readonly<Record<strin
       expectedCodeHash: profile.settlementAsset.expectedCodeHash.toLowerCase()
     },
     aa: {
+      deploymentStrategy: profile.aa.deploymentStrategy,
+      accountVersion: profile.aa.accountVersion,
+      factoryVersion: profile.aa.factoryVersion,
       accountFactoryAddress: profile.aa.accountFactoryAddress
         ? normalizeAddress(profile.aa.accountFactoryAddress)
         : null,
-      accountImplementationAddress: profile.aa.accountImplementationAddress
-        ? normalizeAddress(profile.aa.accountImplementationAddress)
-        : null,
       ownerUserOperationAllowed: profile.aa.ownerUserOperationAllowed,
       eoaFallbackAllowed: profile.aa.eoaFallbackAllowed,
-      backendSigningAllowed: profile.aa.backendSigningAllowed
+      backendSigningAllowed: profile.aa.backendSigningAllowed,
+      nativeValueExecutionAllowed: profile.aa.nativeValueExecutionAllowed
     }
   };
 }

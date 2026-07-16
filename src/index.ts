@@ -1,3 +1,4 @@
+export * from './aa/session.js';
 export * from './chain/profile.js';
 export * from './chain/preflight.js';
 export * from './chain/rpc.js';

@@ -22,12 +22,12 @@ Build a clean, public Agent Service that reaches code-side G0-G3 readiness for B
 
 ## Owner Decision Gate
 
-State: `clear` for G0 and G0.5; `owner-decision-required` before G1 contract implementation and G3 domain source-of-truth lock.
+State: `clear` for code-side G1-G3 after Ender accepted recommendations A and B on 2026-07-16; testnet writes remain `owner-decision-required`.
 
-Recommendation:
+Accepted decisions:
 
-- choose a minimal Botchain-specific session account/factory because there is no deployed Botchain compatibility burden and the legacy account exposes broader owner/direct-call behavior;
-- choose explicit commerce/job state machines plus an independent append-only audit log.
+- use a minimal Botchain-specific session account/direct CREATE2 factory because there is no deployed Botchain compatibility burden and the legacy account exposes broader owner/direct-call behavior;
+- use explicit commerce/job state machines plus an independent append-only audit log.
 
 Reopen condition: new source audit shows a reviewed legacy contract has equivalent session-only invariants, or a concrete multi-writer requirement makes event sourcing materially safer.
 

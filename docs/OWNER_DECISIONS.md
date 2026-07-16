@@ -1,6 +1,6 @@
 # Owner Decision Gate
 
-These choices affect chain contract semantics and the core workflow model. They are intentionally not inferred from implementation detail.
+These choices affect chain contract semantics and the core workflow model. Ender accepted both recommendations on 2026-07-16.
 
 ## A. Botchain AA contract strategy
 
@@ -10,7 +10,7 @@ Why: Botchain has no deployed KTrace compatibility burden. The legacy V3 account
 
 Alternative: pin `KTraceAccountV3SessionExecute.sol` and `KTraceAccountFactoryV2.sol` at legacy commit `410bc41...`, then tighten them behind a symbol/behavior allowlist. This retains more job functionality but carries a larger audit and regression surface.
 
-Owner question: minimal Botchain account, or pin-and-tighten legacy V3?
+Decision: minimal Botchain-specific session account + direct CREATE2 factory. See ADR-0001.
 
 ## B. Workflow source of truth
 
@@ -20,8 +20,8 @@ Why: it keeps settlement release and job transition rules visible in pure domain
 
 Alternative: event-sourced workflow state. This is stronger when replay/multi-writer requirements are already concrete, but none are approved in the current scope.
 
-Owner question: explicit state machines + audit log, or event-sourced truth?
+Decision: explicit state machines + independent append-only audit log. See ADR-0002.
 
 ## Approval scope
 
-Either answer approves only local code, tests, dry-run and read-only verification. It does not approve deployment, funding, transfer, session setup or UserOperation submission.
+The approval covers only local code, tests, dry-run and read-only verification. It does not approve deployment, funding, transfer, session setup or UserOperation submission.
