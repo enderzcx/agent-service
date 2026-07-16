@@ -19,11 +19,12 @@ See [the execution roadmap](docs/EXECUTION.md) for stage status and [the archite
 
 ```bash
 npm ci
-cp .env.example .env
-npm run profile:show
+KTRACE_CHAIN_PROFILE=botchain_testnet npm run profile:show
 npm test
 npm run check
 ```
+
+The CLI deliberately does not auto-load `.env`; pass the profile selector explicitly or load a reviewed environment in the calling process.
 
 Run the live, read-only Botchain probe explicitly:
 
@@ -52,6 +53,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npm run verify:package
 npm run check:secrets
 npm run check
 ```

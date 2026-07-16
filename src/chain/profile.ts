@@ -4,6 +4,9 @@ import { z } from 'zod';
 
 const addressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/);
 const codeHashSchema = z.string().regex(/^0x[a-fA-F0-9]{64}$/);
+const profileIdSchema = z
+  .string()
+  .regex(/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/);
 const httpsUrlSchema = z
   .url()
   .refine((value) => new URL(value).protocol === 'https:', 'HTTPS is required');
@@ -11,7 +14,7 @@ const httpsUrlSchema = z
 export const chainProfileSchema = z
   .object({
     runtimeSchemaVersion: z.literal(1),
-    id: z.string().min(1),
+    id: profileIdSchema,
     displayName: z.string().min(1),
     chainId: z.number().int().positive(),
     caip2: z.string().regex(/^eip155:[1-9][0-9]*$/),
@@ -47,7 +50,46 @@ export const chainProfileSchema = z
       backendSigningAllowed: z.literal(false)
     })
   })
-  .strict();
+  .strict()
+  .superRefine((profile, context) => {
+    const expectedCaip2 = `eip155:${profile.chainId}`;
+    if (profile.caip2 !== expectedCaip2) {
+      context.addIssue({
+        code: 'custom',
+        path: ['caip2'],
+        message: `caip2 must match chainId (${expectedCaip2}).`
+      });
+    }
+
+    const assetPrefix = `${expectedCaip2}/`;
+    if (!profile.nativeAsset.assetId.toLowerCase().startsWith(assetPrefix)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['nativeAsset', 'assetId'],
+        message: `native assetId must be scoped to ${expectedCaip2}.`
+      });
+    }
+
+    const expectedSettlementAssetId =
+      `${expectedCaip2}/erc20:${profile.settlementAsset.tokenAddress}`.toLowerCase();
+    if (profile.settlementAsset.assetId.toLowerCase() !== expectedSettlementAssetId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['settlementAsset', 'assetId'],
+        message: 'settlement assetId must match chainId and tokenAddress.'
+      });
+    }
+
+    const hasFactory = profile.aa.accountFactoryAddress !== null;
+    const hasImplementation = profile.aa.accountImplementationAddress !== null;
+    if (hasFactory !== hasImplementation) {
+      context.addIssue({
+        code: 'custom',
+        path: ['aa'],
+        message: 'AA factory and account implementation addresses must be configured together.'
+      });
+    }
+  });
 
 export type ChainRuntimeProfile = Readonly<z.infer<typeof chainProfileSchema>>;
 
@@ -252,15 +294,25 @@ function fingerprintPayload(profile: ChainRuntimeProfile): Readonly<Record<strin
   return {
     runtimeSchemaVersion: profile.runtimeSchemaVersion,
     id: profile.id,
+    displayName: profile.displayName,
     chainId: profile.chainId,
     caip2: profile.caip2,
     rpcUrl: normalizeUrl(profile.rpcUrl),
     bundlerUrl: normalizeUrl(profile.bundlerUrl),
     explorerUrl: normalizeUrl(profile.explorerUrl),
+    finality: {
+      blockTag: profile.finality.blockTag,
+      minimumConfirmations: profile.finality.minimumConfirmations
+    },
     entryPoint: {
       version: profile.entryPoint.version,
       address: normalizeAddress(profile.entryPoint.address),
       expectedCodeHash: profile.entryPoint.expectedCodeHash.toLowerCase()
+    },
+    nativeAsset: {
+      assetId: profile.nativeAsset.assetId.toLowerCase(),
+      symbol: profile.nativeAsset.symbol,
+      decimals: profile.nativeAsset.decimals
     },
     settlementAsset: {
       assetId: profile.settlementAsset.assetId.toLowerCase(),
@@ -269,8 +321,12 @@ function fingerprintPayload(profile: ChainRuntimeProfile): Readonly<Record<strin
       expectedCodeHash: profile.settlementAsset.expectedCodeHash.toLowerCase()
     },
     aa: {
-      accountFactoryAddress: profile.aa.accountFactoryAddress,
-      accountImplementationAddress: profile.aa.accountImplementationAddress,
+      accountFactoryAddress: profile.aa.accountFactoryAddress
+        ? normalizeAddress(profile.aa.accountFactoryAddress)
+        : null,
+      accountImplementationAddress: profile.aa.accountImplementationAddress
+        ? normalizeAddress(profile.aa.accountImplementationAddress)
+        : null,
       ownerUserOperationAllowed: profile.aa.ownerUserOperationAllowed,
       eoaFallbackAllowed: profile.aa.eoaFallbackAllowed,
       backendSigningAllowed: profile.aa.backendSigningAllowed
@@ -291,6 +347,6 @@ export function buildProfileFingerprint(profile: ChainRuntimeProfile): ProfileFi
 
   return Object.freeze({
     fingerprint: `sha256:${digest}`,
-    namespace: `${parsed.id}-${parsed.chainId}-${digest.slice(0, 16)}`
+    namespace: `${parsed.id}-${parsed.chainId}-sha256-${digest}`
   });
 }

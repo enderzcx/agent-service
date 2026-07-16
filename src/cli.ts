@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { buildProfileFingerprint, resolveRuntimeProfile } from './chain/profile.js';
@@ -113,6 +114,15 @@ async function main(): Promise<void> {
   process.exitCode = result.exitCode;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+function isMainModule(argvPath: string | undefined): boolean {
+  if (!argvPath) return false;
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(argvPath);
+  } catch {
+    return fileURLToPath(import.meta.url) === argvPath;
+  }
+}
+
+if (isMainModule(process.argv[1])) {
   await main();
 }

@@ -16,10 +16,11 @@ Operate the current local/read-only Agent Service safely. There is no deployment
 git clone https://github.com/enderzcx/agent-service.git
 cd agent-service
 npm ci
-cp .env.example .env
 npm run check
 KTRACE_CHAIN_PROFILE=botchain_testnet npm run profile:show
 ```
+
+The CLI does not auto-load `.env`. Operators must make the selected profile explicit in the calling process.
 
 ## Live read-only preflight
 

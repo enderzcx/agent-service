@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BOTCHAIN_TESTNET_PROFILE,
   buildProfileFingerprint,
+  chainProfileSchema,
   resolveRuntimeProfile
 } from '../../src/chain/profile.js';
 import type { ChainProfileError } from '../../src/chain/profile.js';
@@ -58,6 +59,61 @@ describe('ChainRuntime profile interface', () => {
 
     expect(first).toEqual(second);
     expect(first.fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(first.namespace).toMatch(/^botchain-testnet-968-[a-f0-9]{16}$/);
+    expect(first.namespace).toMatch(/^botchain-testnet-968-sha256-[a-f0-9]{64}$/);
+    expect(first.namespace.endsWith(first.fingerprint.replace(':', '-'))).toBe(true);
+  });
+
+  it('rejects profile ids that could escape a physical namespace', () => {
+    const result = chainProfileSchema.safeParse({
+      ...BOTCHAIN_TESTNET_PROFILE,
+      id: '../escape'
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects chain metadata and AA deployment identities that are internally mixed', () => {
+    expect(
+      chainProfileSchema.safeParse({
+        ...BOTCHAIN_TESTNET_PROFILE,
+        caip2: 'eip155:1'
+      }).success
+    ).toBe(false);
+    expect(
+      chainProfileSchema.safeParse({
+        ...BOTCHAIN_TESTNET_PROFILE,
+        settlementAsset: {
+          ...BOTCHAIN_TESTNET_PROFILE.settlementAsset,
+          assetId: BOTCHAIN_TESTNET_PROFILE.settlementAsset.assetId.replace(
+            'eip155:968',
+            'eip155:1'
+          )
+        }
+      }).success
+    ).toBe(false);
+    expect(
+      chainProfileSchema.safeParse({
+        ...BOTCHAIN_TESTNET_PROFILE,
+        aa: {
+          ...BOTCHAIN_TESTNET_PROFILE.aa,
+          accountFactoryAddress: '0x0000000000000000000000000000000000000001'
+        }
+      }).success
+    ).toBe(false);
+  });
+
+  it('binds finality and native-asset policy into the full profile fingerprint', () => {
+    const changedFinality = chainProfileSchema.parse({
+      ...BOTCHAIN_TESTNET_PROFILE,
+      finality: { ...BOTCHAIN_TESTNET_PROFILE.finality, minimumConfirmations: 3 }
+    });
+    const changedNativeAsset = chainProfileSchema.parse({
+      ...BOTCHAIN_TESTNET_PROFILE,
+      nativeAsset: { ...BOTCHAIN_TESTNET_PROFILE.nativeAsset, symbol: 'BOT' }
+    });
+    const baseline = buildProfileFingerprint(BOTCHAIN_TESTNET_PROFILE).fingerprint;
+
+    expect(buildProfileFingerprint(changedFinality).fingerprint).not.toBe(baseline);
+    expect(buildProfileFingerprint(changedNativeAsset).fingerprint).not.toBe(baseline);
   });
 });

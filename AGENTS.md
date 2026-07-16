@@ -12,6 +12,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npm run verify:package
 npm run check:secrets
 npm run check
 KTRACE_CHAIN_PROFILE=botchain_testnet npm run preflight
